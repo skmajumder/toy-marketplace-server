@@ -32,6 +32,30 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const database = client.db("toysStoreDB");
+    const toysCollection = database.collection("toys");
+
+    const indexKeys = { name: 1 };
+    const indexOptions = { name: "toyName" };
+    const searchIndexToys = await toysCollection.createIndex(
+      indexKeys,
+      indexOptions
+    );
+
+    // Add Toys (POST request)
+    app.post("/add-toy", async (req, res) => {
+      const toy = req.body;
+      console.log(toy);
+      toy.createdAt = new Date();
+      if (!toy) {
+        return res
+          .status(401)
+          .send({ error: true, message: "Unable to insert toy" });
+      }
+      const result = await toysCollection.insertOne(toy);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
