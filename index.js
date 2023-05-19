@@ -42,6 +42,15 @@ async function run() {
       indexOptions
     );
 
+    // Get All Toys (GET request)
+    app.get("/all-toys", async (req, res) => {
+      const result = await toysCollection
+        .find()
+        .sort({ createdAt: 1 })
+        .toArray();
+      res.send(result);
+    });
+
     // Add Toys (POST request)
     app.post("/add-toy", async (req, res) => {
       const toy = req.body;
