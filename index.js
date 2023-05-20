@@ -34,11 +34,39 @@ async function run() {
 
     const database = client.db("toysStoreDB");
     const toysCollection = database.collection("toys");
+    const categoriesCollection = database.collection("categories");
 
-    app.get("/my-toys/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { sellerEmail: email };
-      const result = await toysCollection.find(query).toArray();
+    app.get("/my-toys", async (req, res) => {
+      const email = req.query.email;
+      const sort = req.query.sort;
+      const filter = { sellerEmail: email };
+      let result;
+
+      if (sort === "asc") {
+        result = await toysCollection
+          .find(filter)
+          .sort({ price: 1 })
+          .collation({
+            locale: "en_US",
+            numericOrdering: true,
+          })
+          .toArray();
+      } else if (sort === "desc") {
+        result = await toysCollection
+          .find(filter)
+          .sort({ price: -1 })
+          .collation({
+            locale: "en_US",
+            numericOrdering: true,
+          })
+          .toArray();
+      } else {
+        // Default: Fetch toys without sorting
+        result = await toysCollection
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .toArray();
+      }
       res.send(result);
     });
 
@@ -46,16 +74,23 @@ async function run() {
     app.get("/all-toys", async (req, res) => {
       const result = await toysCollection
         .find()
-        .sort({ createdAt: 1 })
+        .sort({ createdAt: -1 })
         .limit(20)
         .toArray();
       res.send(result);
     });
 
+    // Get toy by ID (GET request)
     app.get("/toy/:id", async (req, res) => {
       const toyID = req.params.id;
       const query = { _id: new ObjectId(toyID) };
       const result = await toysCollection.findOne(query);
+      res.send(result);
+    });
+
+    // Get Categories
+    app.get("/categories", async (req, res) => {
+      const result = await categoriesCollection.find().toArray();
       res.send(result);
     });
 
@@ -73,6 +108,7 @@ async function run() {
       res.send(result);
     });
 
+    // Toy Update (PUT request)
     app.put("/update-toy/:id", async (req, res) => {
       const toyID = req.params.id;
       const updateToy = req.body;
@@ -86,6 +122,13 @@ async function run() {
         },
       };
       const result = await toysCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/delete-toy/:id", async (req, res) => {
+      const toyID = req.params.id;
+      const filter = { _id: new ObjectId(toyID) };
+      const result = await toysCollection.deleteOne(filter);
       res.send(result);
     });
 
