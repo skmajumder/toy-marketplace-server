@@ -35,12 +35,12 @@ async function run() {
     const database = client.db("toysStoreDB");
     const toysCollection = database.collection("toys");
 
-    const indexKeys = { name: 1 };
-    const indexOptions = { name: "toyName" };
-    const searchIndexToys = await toysCollection.createIndex(
-      indexKeys,
-      indexOptions
-    );
+    app.get("/my-toys/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { sellerEmail: email };
+      const result = await toysCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // Get All Toys (GET request)
     app.get("/all-toys", async (req, res) => {
@@ -73,6 +73,22 @@ async function run() {
       res.send(result);
     });
 
+    app.put("/update-toy/:id", async (req, res) => {
+      const toyID = req.params.id;
+      const updateToy = req.body;
+      const filter = { _id: new ObjectId(toyID) };
+
+      const updateDoc = {
+        $set: {
+          price: updateToy.price,
+          availableQuantity: updateToy.availableQuantity,
+          description: updateToy.description,
+        },
+      };
+      const result = await toysCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -86,7 +102,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send(`Express server running at ${port}`);
+  res.send(`Express server running at`);
 });
 
 app.listen(port, () => {
